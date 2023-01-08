@@ -23,31 +23,24 @@ app.get("/api/get", (req, res) => {
     res.send(result);
   });
 });
-app.post("/api/insert", (req, res) => {
-  const cusName = req.body.cusName;
-  const review = req.body.review;
-  const sqlInsert = "insert into review (name, review) values (?,?)";
-  db.query(sqlInsert, [cusName, review], (err, result) => {
-    console.log(err);
-  });
-});
 
 app.post("/register", (req, res) => {
-  const email = req.body.email;
+  const username = req.body.username;
   const password = req.body.password;
 
   db.query(
-    "SELECT * FROM login_data WHERE email = ?",
-    [email],
+    "SELECT * FROM login_data WHERE username = ?",
+    [username],
     (err, result) => {
       if (err) {
+        console.log(err);
         res.send(err);
       }
       if (result.length == 0) {
         bcrypt.hash(password, saltRounds, (err, hash) => {
           db.query(
-            "INSERT INTO login_data (email, password) VALUE (?,?)",
-            [email, hash],
+            "INSERT INTO login_data (username, password) VALUE (?,?)",
+            [username, hash],
             (error, response) => {
               if (err) {
                 res.send(err);
@@ -58,32 +51,33 @@ app.post("/register", (req, res) => {
           );
         });
       } else {
-        res.send({ msg: "Email already exists" });
+        res.send({ msg: "Username already exists" });
       }
     }
   );
 });
 
 app.post("/login", (req, res) => {
-  const email = req.body.email;
+  const username = req.body.username;
   const password = req.body.password;
 
   db.query(
-    "SELECT * FROM login_data WHERE email = ?",
-    [email],
+    "SELECT * FROM login_data WHERE username = ?",
+    [username],
     (err, result) => {
       if (err) {
-        res.send(err);
-      }
-      if (result.length > 0) {
+        res.send({ msg: "login error" });
+      } else if (result.length > 0) {
         bcrypt.compare(password, result[0].password, (error, response) => {
           if (error) {
             res.send(error);
-          }
-          if (response) {
-            res.send({ msg: "User logged in" });
+            console.log(error);
           } else {
-            res.send({ msg: "Incorrect password" });
+            if (response) {
+              res.send({ msg: "User logged in" });
+            } else {
+              res.send({ msg: "Incorrect password" });
+            }
           }
         });
       } else {
@@ -91,10 +85,6 @@ app.post("/login", (req, res) => {
       }
     }
   );
-});
-
-app.get("/", (req, res) => {
-  res.send("Hello World!");
 });
 
 app.listen(3001, () => {
