@@ -30,6 +30,60 @@ app.post("/quaterly", (req, res) => {
   });
 });
 
+app.post("/routereport", (req, res) => {
+  const year = req.body.year;
+  const route = req.body.route;
+  const sqlSelect = "call SalesAccordingToRoute(?,?)";
+  db.query(sqlSelect, [year, route], (err, result) => {
+    if (err) {
+      console.log(err);
+    } else {
+      res.send(result);
+    }
+  });
+});
+
+app.post("/cityreport", (req, res) => {
+  const year = req.body.year;
+  const city = req.body.city;
+  const sqlSelect = "call SalesAccordingToCity(?,?)";
+  db.query(sqlSelect, [year, city], (err, result) => {
+    if (err) {
+      console.log(err);
+    } else {
+      res.send(result);
+    }
+  });
+});
+
+app.post("/mworkinghours", (req, res) => {
+  const year = req.body.year;
+  const type = req.body.type;
+  const time = req.body.time;
+  const sqlSelect = "call monthlyWorkingHours(?,?,?)";
+  db.query(sqlSelect, [time, year, type], (err, result) => {
+    if (err) {
+      console.log(err);
+    } else {
+      res.send(result);
+    }
+  });
+});
+
+app.post("/qworkinghours", (req, res) => {
+  const year = req.body.year;
+  const type = req.body.type;
+  const time = req.body.time;
+  const sqlSelect = "call quarterlyWorkingHours(?,?,?)";
+  db.query(sqlSelect, [time, year, type], (err, result) => {
+    if (err) {
+      console.log(err);
+    } else {
+      res.send(result);
+    }
+  });
+});
+
 app.post("/placeOrder", (req, res) => {
   const customerID = req.body.customerID;
   const routeID = req.body.routeID;
@@ -45,36 +99,23 @@ app.post("/placeOrder", (req, res) => {
       }
     }
   );
+});
 
-  app.post("/addItem", (req, res) => {
-    const orderID = req.body.orderID;
-    const productID = req.body.productID;
-    const quantity = req.body.quantity;
-    db.query(
-      "insert into product_order (Product_ID,Order_ID,Quantity) value (?,?,?) ",
-      [productID, orderID, quantity],
-      (err, result) => {
-        if (err) {
-          console.log(err);
-        } else {
-          res.send({});
-        }
+app.post("/addItem", (req, res) => {
+  const orderID = req.body.orderID;
+  const productID = req.body.productID;
+  const quantity = req.body.quantity;
+  db.query(
+    "insert into product_order (Product_ID,Order_ID,Quantity) value (?,?,?) ",
+    [productID, orderID, quantity],
+    (err, result) => {
+      if (err) {
+        console.log(err);
+      } else {
+        res.send({});
       }
-    );
-  });
-
-  // db.query(
-  //   "insert into supply_chain.order(Date,Customer_ID,Route_ID,Total_Price,Total_Capacity,Train_Scheduled,Truck_Scheduled) value (?,?,?,0,0,0,0)",
-  //   [orderID, productID, quantity, date],
-  //   (err, result) => {
-  //     if (err) {
-  //       console.log(err);
-  //       res.send(err);
-  //     } else {
-  //       res.send("Order placed successfully");
-  //     }
-  //   }
-  // );
+    }
+  );
 });
 
 app.post("/register", (req, res) => {
@@ -138,11 +179,29 @@ app.post("/routes", (req, res) => {
     }
   );
 });
-
+app.get("/allroutes", (req, res) => {
+  db.query("SELECT Route_ID FROM truck_route", (err, result) => {
+    if (err) {
+      res.send({ msg: "Error while accesing routes" });
+    } else {
+      res.send(result);
+    }
+  });
+});
 app.get("/stores", (req, res) => {
   db.query("SELECT * FROM store", (err, result) => {
     if (err) {
       res.send({ msg: "Error while accesing stores" });
+    } else {
+      res.send(result);
+    }
+  });
+});
+
+app.get("/allstores", (req, res) => {
+  db.query("SELECT Store_ID,City FROM store", (err, result) => {
+    if (err) {
+      res.send({ msg: "Error while accesing routes" });
     } else {
       res.send(result);
     }
