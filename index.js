@@ -17,6 +17,107 @@ app.use(cors());
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+app.get("/schedule", (req, res) => {
+  db.query("call supply_chain.setTrain_Order();", (err, result) => {
+    if (err) {
+      console.log(err);
+    } else {
+      res.send(result);
+    }
+  });
+});
+
+// app.post("/placeOrder", (req, res) => {
+//   const customerID = req.body.customerID;
+//   const routeID = req.body.routeID;
+//   const date = new Date().toJSON().slice(0, 10);
+//   db.query(
+//     "call addOrder(?,?,?)",
+//     [date, customerID, routeID],
+//     (err, result) => {
+//       if (err) {
+//         console.log(err);
+//       } else {
+//         res.send(result[0]);
+//       }
+//     }
+//   );
+// });
+
+// app.post("/addItem", (req, res) => {
+//   const orderID = req.body.orderID;
+//   const productID = req.body.productID;
+//   const quantity = req.body.quantity;
+//   db.query(
+//     "insert into product_order (Product_ID,Order_ID,Quantity) value (?,?,?) ",
+//     [productID, orderID, quantity],
+//     (err, result) => {
+//       if (err) {
+//         console.log(err);
+//       } else {
+//         res.send({});
+//       }
+//     }
+//   );
+// });
+
+async function addOrder(items, order) {
+  const customerID = order.customerID;
+  const routeID = order.routeID;
+  const date = new Date().toJSON().slice(0, 10);
+  let conn = null;
+  let orderID = null;
+  let days = null;
+  conn = db.getConnection((err, conn) => {
+    if (err) {
+      console.log(err);
+    } else {
+      try {
+        conn.beginTransaction();
+        conn.query(
+          "call addOrder(?,?,?)",
+          [date, customerID, routeID],
+          (err, result) => {
+            orderID = result[0][0].orderID;
+            for (const item of items) {
+              const productID = item.Product_ID;
+              const quantity = item.quantity;
+              conn.query(
+                "insert into product_order (Product_ID,Order_ID,Quantity) value (?,?,?) ",
+                [productID, orderID, quantity]
+              );
+            }
+            conn.query("call supply_chain.assignTrain(?);", [orderID]);
+            conn.query(
+              "call supply_chain.daysTodeliver(?);",
+              [orderID],
+              (err, result) => {
+                days = result[0][0].Arrives_In;
+                console.log(days);
+              }
+            );
+          }
+        );
+        conn.commit();
+      } catch (err) {
+        conn.rollback();
+        console.log(err);
+        throw err;
+      } finally {
+        conn.release();
+        return days;
+      }
+    }
+  });
+}
+
+app.post("/addorder", (req, res) => {
+  const items = req.body.items;
+  const order = req.body.order;
+  const days = addOrder(items, order);
+  res.send(days);
+});
+
 app.post("/quaterly", (req, res) => {
   const year = req.body.year;
   const quater = req.body.quater;
@@ -59,7 +160,7 @@ app.post("/cityreport", (req, res) => {
 app.post("/mworkinghours", (req, res) => {
   const year = req.body.year;
   const type = req.body.type;
-  const time = req.body.time;
+  const time = req.body.month;
   const sqlSelect = "call monthlyWorkingHours(?,?,?)";
   db.query(sqlSelect, [time, year, type], (err, result) => {
     if (err) {
@@ -73,8 +174,8 @@ app.post("/mworkinghours", (req, res) => {
 app.post("/qworkinghours", (req, res) => {
   const year = req.body.year;
   const type = req.body.type;
-  const time = req.body.time;
-  const sqlSelect = "call quarterlyWorkingHours(?,?,?)";
+  const time = req.body.quater;
+  const sqlSelect = "call supply_chain.quarterlyWorkingHours(?,?,?)";
   db.query(sqlSelect, [time, year, type], (err, result) => {
     if (err) {
       console.log(err);
@@ -82,40 +183,6 @@ app.post("/qworkinghours", (req, res) => {
       res.send(result);
     }
   });
-});
-
-app.post("/placeOrder", (req, res) => {
-  const customerID = req.body.customerID;
-  const routeID = req.body.routeID;
-  const date = new Date().toJSON().slice(0, 10);
-  db.query(
-    "call addOrder(?,?,?)",
-    [date, customerID, routeID],
-    (err, result) => {
-      if (err) {
-        console.log(err);
-      } else {
-        res.send(result[0]);
-      }
-    }
-  );
-});
-
-app.post("/addItem", (req, res) => {
-  const orderID = req.body.orderID;
-  const productID = req.body.productID;
-  const quantity = req.body.quantity;
-  db.query(
-    "insert into product_order (Product_ID,Order_ID,Quantity) value (?,?,?) ",
-    [productID, orderID, quantity],
-    (err, result) => {
-      if (err) {
-        console.log(err);
-      } else {
-        res.send({});
-      }
-    }
-  );
 });
 
 app.post("/register", (req, res) => {
