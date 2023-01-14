@@ -18,7 +18,7 @@ app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.get("/schedule", (req, res) => {
-  db.query("call supply_chain.setTrain_Order();", (err, result) => {
+  db.query("call supply_chain.Schedule_Orders();", (err, result) => {
     if (err) {
       console.log(err);
     } else {
