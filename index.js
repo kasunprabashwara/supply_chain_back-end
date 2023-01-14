@@ -99,13 +99,13 @@ async function addOrder(items, order) {
           }
         );
         conn.commit();
+        return days;
       } catch (err) {
         conn.rollback();
         console.log(err);
         throw err;
       } finally {
         conn.release();
-        return days;
       }
     }
   });
@@ -115,6 +115,7 @@ app.post("/addorder", (req, res) => {
   const items = req.body.items;
   const order = req.body.order;
   const days = addOrder(items, order);
+
   res.send(days);
 });
 
