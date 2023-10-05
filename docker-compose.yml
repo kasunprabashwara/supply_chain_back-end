@@ -1,0 +1,40 @@
+services:
+  supply_chain_db:
+    image: mysql:8.0
+    # NOTE: use of "mysql_native_password" is not recommended: https://dev.mysql.com/doc/refman/8.0/en/upgrading-from-previous-series.html#upgrade-caching-sha2-password
+    # (this is just an example, not intended to be a production configuration)
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    volumes:
+      - ./db/database.sql:/docker-entrypoint-initdb.d/0_init.sql
+    expose:
+      - 3306
+    environment:
+      MYSQL_ROOT_PASSWORD: 1234
+      MYSQL_DATABASE: supply_chain
+      MYSQL_TCP_PORT: 3306
+    networks:
+      - internelnetwork
+  backend:
+    build: .
+    image: backendimage
+    restart: always
+    ports:
+      - 3001:3001
+    expose:
+      - 3001
+    environment:
+        DB_HOST: supply_chain_db
+        DB_USER: root
+        DB_PASSWORD: 1234
+        DB_NAME: supply_chain
+        DB_PORT: 3306
+    depends_on:
+      - supply_chain_db
+    networks:
+      - internelnetwork
+networks:
+  internelnetwork:
+    driver: bridge
+
+

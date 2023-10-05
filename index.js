@@ -7,15 +7,21 @@ const bcrypt = require("bcrypt");
 const saltRounds = 10;
 
 const db = mysql.createPool({
-  host: "localhost",
-  user: "root",
-  password: "1234",
-  database: "supply_chain",
+  host: process.env.DB_HOST || "supply_chain_db",
+  user: process.env.DB_USER || "root",
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT || 3306,
 });
 
 app.use(cors());
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+
+app.get("", (req, res) => {
+  res.send("Hello World");
+});
 
 app.get("/schedule", (req, res) => {
   db.query("call supply_chain.Schedule_Orders();", (err, result) => {
@@ -26,40 +32,6 @@ app.get("/schedule", (req, res) => {
     }
   });
 });
-
-// app.post("/placeOrder", (req, res) => {
-//   const customerID = req.body.customerID;
-//   const routeID = req.body.routeID;
-//   const date = new Date().toJSON().slice(0, 10);
-//   db.query(
-//     "call addOrder(?,?,?)",
-//     [date, customerID, routeID],
-//     (err, result) => {
-//       if (err) {
-//         console.log(err);
-//       } else {
-//         res.send(result[0]);
-//       }
-//     }
-//   );
-// });
-
-// app.post("/addItem", (req, res) => {
-//   const orderID = req.body.orderID;
-//   const productID = req.body.productID;
-//   const quantity = req.body.quantity;
-//   db.query(
-//     "insert into product_order (Product_ID,Order_ID,Quantity) value (?,?,?) ",
-//     [productID, orderID, quantity],
-//     (err, result) => {
-//       if (err) {
-//         console.log(err);
-//       } else {
-//         res.send({});
-//       }
-//     }
-//   );
-// });
 
 async function addOrder(items, order) {
   const customerID = order.customerID;
@@ -152,10 +124,24 @@ app.post("/cityreport", (req, res) => {
   db.query(sqlSelect, [year, city], (err, result) => {
     if (err) {
       console.log(err);
+      res.send(err);
     } else {
       res.send(result);
     }
   });
+});
+
+app.post("/test", (req, res) => {
+  const statment = req.body.statement;
+  db.query(statment,[], (err, result) => {
+    if(err){
+      res.send(err);
+    }
+    else{
+      res.send(result);
+    }
+  }
+  );
 });
 
 app.post("/mworkinghours", (req, res) => {
@@ -226,7 +212,8 @@ app.post("/register", (req, res) => {
 app.get("/products", (req, res) => {
   db.query("SELECT * FROM product", (err, result) => {
     if (err) {
-      res.send({ msg: "Error while accesing products" });
+      res.send({ msg: "Error occured while accesing products" });
+      console.log(err);
     } else {
       res.send(result);
     }
